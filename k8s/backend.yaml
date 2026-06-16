@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-app-backend
+  labels:
+    app: voting-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voting-app-backend
+  template:
+    metadata:
+      labels:
+        app: voting-app-backend
+    spec:
+      containers:
+      - name: voting-app-backend
+        image: ghcr.io/ni5o/voting-app-backend:latest
+        ports:
+        - containerPort: 5001
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_HOST
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-app-backend
+  labels:
+    app: voting-app
+spec:
+  selector:
+    app: voting-app-backend
+  ports:
+  - port: 5001
+    targetPort: 5001

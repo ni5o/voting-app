@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-app-database
+  labels:
+    app: voting-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voting-app-database
+  template:
+    metadata:
+      labels:
+        app: voting-app-database
+    spec:
+      containers:
+      - name: voting-app-database
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: voting-app-database-data
+          mountPath: /var/lib/postgresql/data
+          subPath: pgdata
+      volumes:
+      - name: voting-app-database-data
+        persistentVolumeClaim:
+          claimName: voting-app-database
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-app-database
+  labels:
+    app: voting-app
+spec:
+  selector:
+    app: voting-app-database
+  ports:
+  - port: 5432
+    targetPort: 5432

@@ -1,0 +1,79 @@
+services:
+
+  vote-database:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: votingdb
+      POSTGRES_USER: voting
+      POSTGRES_PASSWORD: voting
+    volumes:
+      - vote-db-data:/var/lib/postgresql/data
+      - ./app/backend/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      - voting-app
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - vote-database
+    networks:
+      - voting-app
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      POSTGRES_HOST: vote-database
+      POSTGRES_DB: votingdb
+      POSTGRES_USER: voting
+      POSTGRES_PASSWORD: voting
+    depends_on:
+      - vote-database
+    networks:
+      - voting-app
+
+  vote-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.vote-frontend
+    environment:
+      POSTGRES_HOST: vote-database
+      POSTGRES_DB: votingdb
+      POSTGRES_USER: voting
+      POSTGRES_PASSWORD: voting
+      BACKEND_PROTOCOL: http
+      BACKEND_HOST: backend
+      BACKEND_PORT: "5001"
+    ports:
+      - "3000:3000"
+    networks:
+      - voting-app
+
+  result-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.result-frontend
+    environment:
+      POSTGRES_HOST: vote-database
+      POSTGRES_DB: votingdb
+      POSTGRES_USER: voting
+      POSTGRES_PASSWORD: voting
+      BACKEND_PROTOCOL: http
+      BACKEND_HOST: backend
+      BACKEND_PORT: "5001"
+    ports:
+      - "3001:3000"
+    networks:
+      - voting-app
+
+volumes:
+  vote-db-data:
+
+networks:
+  voting-app:

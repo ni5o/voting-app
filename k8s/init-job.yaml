@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voting-app-db-init
+  labels:
+    app: voting-app
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: voting-app-db-init
+        image: postgres:15
+        command:
+        - /bin/sh
+        - -c
+        - |
+          sleep 10
+          psql postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB -f /init/init_db.sql
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_HOST
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: voting-app-secrets
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: init-sql
+          mountPath: /init
+      volumes:
+      - name: init-sql
+        configMap:
+          name: voting-app-init-sql
